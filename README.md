@@ -222,24 +222,24 @@ Every state change emits 'event' ([event sourcing](https://martinfowler.com/eaaD
    export default api;
    ```
 
-   We can define CRUD actions for the resource and sections:
+We can define CRUD actions for the resource and sections:
 
-   - `get` - GET resource request
-   - `create` - POST request - creates new resource
-   - `update` - PUT request - updates existing resource
-   - `delete` - DELETE request - deletes existing resource
-   - `list` - GET request listing resources.
-   - `sections` - defines behavior for sections.
+- `get` - GET resource request
+- `create` - POST request - creates new resource
+- `update` - PUT request - updates existing resource
+- `delete` - DELETE request - deletes existing resource
+- `list` - GET request listing resources.
+- `sections` - defines behavior for sections.
 
-   For each CRUD endpoint and each 'section'. We can define:
+For each CRUD endpoint and each 'section'. We can define:
 
-   - `let` - array of roles (string - name of role or object with some conditions) that are allowed to perform the action.
-   - `if` - defines conditions for the action. For example, where `if` is set to `{ state: ['init', 'profileCreated'] }` then only resources with `state` equal to `init` or `profileCreated` will be accessible.
-     ex: `if: { user: { state: ['init'] } }` - it means for 'user' that state should be 'init'.
-   - `validate` - defines validation schema for the action if it differs from the resource scheme or particular section scheme.
-   - `set` - it can be used to change state value (or any other property). For example: `{ state: 'invoiceFileUploaded' }`.
+- `let` - array of roles (string - name of role or object with some conditions) that are allowed to perform the action.
+- `if` - defines conditions for the action. For example, where `if` is set to `{ state: ['init', 'profileCreated'] }` then only resources with `state` equal to `init` or `profileCreated` will be accessible.
+  ex: `if: { user: { state: ['init'] } }` - it means for 'user' that state should be 'init'.
+- `validate` - defines validation schema for the action if it differs from the resource scheme or particular section scheme.
+- `set` - it can be used to change state value (or any other property). For example: `{ state: 'invoiceFileUploaded' }`.
 
-   - `get` - defines behavior of GET request.
+`get` - defines behavior of GET request.
 
 `list` may receive additional parameters:
 
@@ -254,9 +254,9 @@ There can be multiple 'if' conditions which correspond to 'OR' boolean operation
 
 ## Extending pontegg.io
 
-`Pontegg.io` tries to address most common use cases, when it is short on functionality it is possible to extend it further with custom logic.
+`Pontegg.io` tries to address most common use cases, when it comes short on functionality it is possible to extend it further with custom logic.
 
-- Each upset operation emits Event (`ResourceCreatedEvent`, `ResourceDeletedEvent`, `ResourceUpdatedEvent`) which can be handled by custom listeners and further work on it. It can be used to send notifications, log events to audit log, etc.
+- Each POST, PUT, DELETE operation emits Event (`ResourceCreatedEvent`, `ResourceDeletedEvent`, `ResourceUpdatedEvent`) which can be handled by custom listeners and further work on it. It can be used to send notifications, log events to audit log, etc.
 
 - If endpoint needs some custom logic which result must be returned to the client, then it can be done by adding custom endpoint to the controller. (usual nest way)
 
