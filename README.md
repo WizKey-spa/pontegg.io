@@ -4,100 +4,269 @@
 
 Attention!. It uses mongodb in 'schemaless' manner. Everything depends of robustness of your json schemes.
 
-read more about [pontegg.io](/docs/ponteggio.md)
+see the presentation [pontegg.io](https://docs.google.com/presentation/d/e/2PACX-1vSt4WwVuXGoTSdkQIisI0zePXYxE4kzceV9uPBW6pyAfP3uUp7HUpTVtovT8iT8kyCFTmLs8eSowozd/pub?start=false&loop=false&delayms=3000)
 
-## Installation
+## Installation & Configuration
 
 ```bash
 $ pnpm install
 ```
 
-## Running the pontegg.io
+see further installation steps in [docs/instalation.md](docs/instalation.md)
 
-```bash
-# development
-$ pnpm run start
+## Features
 
-# watch mode
-$ pnpm run start:dev
+- [x] automatic CRUD REST API controller creation
+- [x] automatic API documentation (OpenAPI, swagger)
+- [x] multilayer fine grained access control ([ACL](https://en.wikipedia.org/wiki/Access-control_list))
+- [x] role/group based access control to act upon the resource and its individual section ([RBAC](https://en.wikipedia.org/wiki/Role-based_access_control)).
+- [x] api declaratively defined in one json file.
+- [x] simple but powerful state management
+- [x] out of the box file/s upload api
+- [x] automatic data validation [json schema](https://json-schema.org/)
+- [x] automatic data sanitization & coercion
+- [x] automatic data pagination
+- [x] automatic data sorting
+- [x] event sourcing (Events)
 
-# production mode
-$ pnpm run start:prod
-```
+## Why?
 
-## Test
+Very often we cross with situation when resource (entity) has complex structure which is build up during process of interaction of different actors which on each step are allowed to commit particular section of the resource.
 
-```bash
-# unit tests
-$ pnpm run test
+`pontegg.io` is not intended for the scenarios where domain has a lot of related entities. It works well when complexity is confined in few arbitrarily complex resources.
+Currently it does not provide ORM nor GraphQl since 'complexity' is not scattered across many entities/tables.
 
-# e2e tests
-$ pnpm run test:e2e
+If domain logic requires many related entities, or there is no interaction of different actors it is better look for other solutions.
 
-# test coverage
-$ pnpm run test:cov
-```
+## Security
 
-## Configuration
+App can accessed only by authenticated users. Authentication happens after checking validity of JWT token. Which is renewed periodically.
 
-The service is configured via environment variables.
+Solution apply `security by default` methodology,[RBAC](https://en.wikipedia.org/wiki/Role-based_access_control) and [ACL](https://en.wikipedia.org/wiki/Access-control_list) principles. Roles and permissions should be explicitly defined for each operation on each resource.
 
-- PORT: the http port api will be exposed to, defaults to 5002
+Every API call is evaluated following the rules:
 
-- LOGLEVEL: the default pino log level, defaults to `debug`
+1. Is user authenticated?
+2. Is user allowed to access resource api endpoint (ACL)?
+3. Does user meets conditions to access particular resource (RBAC)?
+4. Does user user meets conditions to perform action on resource section?
 
-- MONGODB_PROTOCOL
-- MONGODB_USERNAME
-- MONGODB_PASSWORD
-- MONGODB_HOST
-- MONGODB_DATABASE
-- MONGODB_CA_CERT_PATH
+## State management
 
-- STORAGE_PROVIDER: allows to choose a storage adapter.
-  Available values are `local` and `S3`
-  Defaults to `local`.
-
-- STORAGE_PATH: storage base path
-
-- STORAGE_S3_BUCKET: S3 bucket name
-
-- EMAIL_HOST: defaults to 'localhost'
-- EMAIL_PORT: defaults to '1025'
-- EMAIL_IS_SECURE: defaults to false
-- EMAIL_IS_TLS: defaults to true
-- EMAIL_ADDRESS
-- EMAIL_PASS
-
-- OAUTH_CLIENT_ID: The assigned oauth client id
-- OAUTH_SERVER_URL: Url to keycloak endpoint
-- OAUTH_REALM: The assigned oauth realm
-- OAUTH_CLIENT_SECRET: The assigned oauth client secret
-
-- AUTHZ_SERVER_URL: Url to the `auth` backend
-
-- PUBLIC_URL: The url apis will be exposed to
-
-- PROMETHEUS_EXPORTER_PORT: env.PROMETHEUS_EXPORTER_PORT defaults to 9464,
-- PROMETHEUS_START_EXPORTER: Enables prometheus export on the port specified with `PROMETHEUS_EXPORTER_PORT`
-
-- METRICS_SERVICE_LABEL: Value to assign to the `service` http metric label
-
-- FALLBACK_LANGUAGE: defaults to `en`
-
-- SUPPORTED_ASSETS: comma delimited string. defaults to `['credit']`
-
-- ALLOW_NON_TOKENIZED_ASSETS: defaults to `false`
+`pontegg.io` provides simple but powerful state management. Transition from one state to another is govern by 'rules'. Rules expose conditions which if satisfied allow transition to next sate to happen.
+Every state change emits 'event' ([event sourcing](https://martinfowler.com/eaaDev/EventSourcing.html)) containing 'payload' and 'actor' data. Event can be intercepted by any other component and act in consequence.
 
 ## Components
 
-This section will describe some of the components used for this project.
+1. _ResourceServices_ - provide factory method to instantiate 'Resource Model' together with it's controller and services
 
-### Logger
+   - ResourceQueryService - provides CRUD operations wrapped around native mongodb queries
 
-The logger is [Pino](https://github.com/pinojs/pino), in particular in its NestJS flavour [`nestjs-pino`](https://github.com/iamolegga/nestjs-pino). The logger is not used as "vanilla", instead has been customized for redaction, tracing purposes, to exclude some paths and to adapt its behavior when executed in specified environments. Under `src/logger` all the logger configuration can be found. The `logger.ts` file contains the basic configurations of Pino Logger, here happens the OpenTelemetry components injection. The `logger.module.ts` file contains all the module settings as well as the redaction component ([`pino-noir`](https://github.com/pinojs/pino-noir)).
+2. _Auth_ - Responsible for authentication. Provides JWT token validation.
 
-### Tracing and Metrics
+3. _Emails_ - Allows sending emails: simple, html, with attachments etc.
 
-Tracing and metrics for the dataroom are provided by [OpenTelemetry](https://github.com/open-telemetry/opentelemetry-js), specifically the NestJS version [`nestjs-otel`](https://github.com/pragmaticivan/nestjs-otel). The tracing module is configured in the `src/tracing/tracing.ts` file where the JaegerExporter (used to send traces to Tempo collector) is instantiated and also the [propagators](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/api-propagators.md), the Node automatic instrumentations and the resource name (identifies which service generated the trace in Tempo).
+4. _i18n_ - Localization
 
-The metrics are configured in the `src/metrics` folder. The `metrics.service.ts` file configures the service for the metrics along with the exporter (Prometheus) instantiation. The `metrics.module.ts` file defines the module to be passed to the app. The `metrics.middleware.ts` file implements the NestJS middleware in order to be able to catch all the requests received by the app. In this file are also defined the metrics that should be counted to be aggregated and sent to prometheus. At the moment the two metrics recorded are the times a specific URL is called and the app response latency.
+5. _PdfRender_ - renders pdf from markdown formatted text
+
+6. _Validator_ - Ajv based json scheme validator
+
+## Usage
+
+1. _Setup json schemes_ for your resource at `shared/schemes` folder. Each section of the resource should have its own schema. Json Schemes defacto define resource structure and serve to validate incoming requests. For example:
+
+   - `shared/schemes/user/user.scheme.ts` - schema for user resource
+   - `shared/schemes/user/profile.section.scheme.ts` - schema for user profile section
+   - `shared/schemes/user/contacts.section.scheme.ts` - schema for user contacts section
+
+   Main scheme should be exported as `default` and sections as named exports.
+   Scheme file name should follow the pattern: `[resource-name].scheme.ts`. Section file name should follow the pattern: `[resource-name].[section-name].scheme.ts`.
+   Scheme should be defined following Object notation. For example:
+
+   ```typescript
+   const scheme = {
+     type: 'object',
+     properties: {
+       name: { type: 'string' },
+       email: { type: 'string' },
+       password: { type: 'string' },
+     },
+   } as const;
+   export default scheme;
+   ```
+
+   > @ATTENTION. `scheme` must be defined with `as const`.
+
+   All Schemes should be valid [json schema](https://json-schema.org/)
+   All resource schemes should be registered and exported in `index.ts` file. For example:
+
+   ```typescript
+   import user from './user.scheme';
+   import profile from './profile.scheme';
+   import contacts from './contacts.scheme';
+
+   export const schemes = [
+     ['user', user],
+     ['profile.section', profile],
+     ['contacts.section', contacts],
+   ];
+   ```
+
+2. _Register Types_ for your resource at `shared/types` folder. For example:
+
+   ```typescript
+   import { FromSchema } from 'json-schema-to-ts';
+   import { DeserializeDate, WithId } from './common';
+
+   import user from '../schemes/user/user.scheme';
+   import profile from '../schemes/user/profile.section.scheme';
+   import contacts from '../schemes/user/contacts.section.scheme';
+
+   export type User = FromSchema<typeof user, DeserializeDate>;
+   export type UserProfile = FromSchema<typeof profile, DeserializeDate>;
+   export type UserContacts = FromSchema<typeof contacts, DeserializeDate>;
+
+   type StoredUser = WithId<User>;
+   export default StoredUser;
+   ```
+
+   Main type should be exported as `default` and sections as named exports.
+
+   > @TIP. You may register some 'partial' types for the convenience.
+
+3. Set Resource Model using factory method in `user/user.module.ts` file. For example:
+
+   ```typescript
+   import { Module, DynamicModule } from '@nestjs/common';
+
+   import ResourceBaseService from '../resource/resource.service';
+   import { resourceModuleFactory } from '../resource/module-factory';
+
+   export class UserService extends ResourceBaseService {}
+
+   @Module({})
+   export class UserModule {
+     static register(): Promise<DynamicModule> {
+       return resourceModuleFactory(this, 'user', UserService);
+     }
+   }
+   ```
+
+   > @TIP. You may override methods of `ResourceBaseService` class or add new 'specialized'.
+
+4. Register User Model in `app.module.ts` file. For example:
+
+   ```typescript
+   import { Module } from '@nestjs/common';
+   import { ConfigModule } from '@nestjs/config';
+   import { TypeOrmModule } from '@nestjs/typeorm';
+
+   import { UserModule } from './user/user.module';
+
+   @Module({
+     imports: [ConfigModule.forRoot(), TypeOrmModule.forRoot(), UserModule.register()],
+   })
+   export class AppModule {}
+   ```
+
+5. Define API behavior at `user/user.api.ts`:
+
+   ```typescript
+   import scheme from '@Schemes/user.scheme';
+   import API from '@Types/api';
+
+   export type Actor = 'user' | 'admin';
+
+   const api: API<Actor> = {
+     resourceSchemeName: 'user',
+     scheme,
+     states: scheme.properties.state.enum,
+     indexes: [{ key: { userId: 1 } }, { key: { createdAt: 1 } }, { key: { updatedAt: 1 } }],
+     sections: {
+       profile: {
+         create: {
+           let: ['admin', { for: 'user', if: { state: ['init'] } }],
+           set: { state: 'profileCreated' },
+         },
+       },
+       contacts: {
+         create: {
+           let: ['admin', { for: 'user', if: { state: ['init'] } }],
+           set: { state: 'contactsCreated' },
+         },
+       },
+     },
+     get: {
+       let: ['admin', { for: 'user', if: { user: '_id' } }],
+     },
+     create: {
+       let: [
+         { for: 'user', validate: 'create.user', set: 'authId' },
+         { for: 'admin', validate: 'admin.create.user' },
+       ],
+       set: { state: 'init' },
+     },
+     delete: {
+       let: ['admin'],
+     },
+     update: {
+       roles: ['admin'],
+     },
+     list: {
+       let: ['admin'],
+       query: ['userId', 'state'],
+       projection: ['userId', 'invoice', 'document'],
+     },
+   };
+   export default api;
+   ```
+
+   We can define CRUD actions for the resource and sections:
+
+   - `get` - GET resource request
+   - `create` - POST request - creates new resource
+   - `update` - PUT request - updates existing resource
+   - `delete` - DELETE request - deletes existing resource
+   - `list` - GET request listing resources.
+   - `sections` - defines behavior for sections.
+
+   For each CRUD endpoint and each 'section'. We can define:
+
+   - `let` - array of roles (string - name of role or object with some conditions) that are allowed to perform the action.
+   - `if` - defines conditions for the action. For example, where `if` is set to `{ state: ['init', 'profileCreated'] }` then only resources with `state` equal to `init` or `profileCreated` will be accessible.
+     ex: `if: { user: { state: ['init'] } }` - it means for 'user' that state should be 'init'.
+   - `validate` - defines validation schema for the action if it differs from the resource scheme or particular section scheme.
+   - `set` - it can be used to change state value (or any other property). For example: `{ state: 'invoiceFileUploaded' }`.
+
+   - `get` - defines behavior of GET request.
+
+`list` may receive additional parameters:
+
+- `query` - defines query parameters that are allowed to be used in the request.
+- `projection` - defines projection for returned query.
+
+On `create` action 'if' conditions refer to the user properties. For example, if `if: { state: ['kyc'] }` then only users with `state` equal to `kyc` will be able to create resource.
+
+On `update` action 'if' conditions refer to the present resource properties. For example, if `if: { state: ['approved'] }` then resource will be updated only when `state` equal to `approved`.
+
+There can be multiple 'if' conditions which correspond to 'OR' boolean operation. Which means that if at least one condition is met then the action is allowed.
+
+## Extending pontegg.io
+
+`Pontegg.io` tries to address most common use cases, when it is short on functionality it is possible to extend it further with custom logic.
+
+- Each upset operation emits Event (`ResourceCreatedEvent`, `ResourceDeletedEvent`, `ResourceUpdatedEvent`) which can be handled by custom listeners and further work on it. It can be used to send notifications, log events to audit log, etc.
+
+- If endpoint needs some custom logic which result must be returned to the client, then it can be done by adding custom endpoint to the controller. (usual nest way)
+
+## TODO
+
+- [ ] add support SSE
+- [ ] add support for (GraphQL)[https://graphql.org/]
+- [ ] add support MongoDB Schemas
+- [ ] add support for complex state transition rules (OR, AND, NOT, etc.)
+- [ ] add support for rejecting uploads with not whitelisted file extensions
+- [ ] resource section versioning
+
+## License
