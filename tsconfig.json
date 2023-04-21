@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "baseUrl": ".",
+    "target": "ES2022",
+    "lib": ["esnext"],
+    "moduleResolution": "node",
+    "outDir": "./dist",
+
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    // "noEmit": true,
+    "esModuleInterop": true,
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    // "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
+    "incremental": true,
+    "noStrictGenericChecks": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "paths": {
+      "@Types/*": ["types/*"],
+      "fonts/*": ["fonts/*"]
+    }
+  },
+  "exclude": ["node_modules/*", "dist"]
+}
