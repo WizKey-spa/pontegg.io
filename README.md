@@ -1,6 +1,10 @@
-## Description 
+# pontegg.io
 
-WizKey Bellerofonte server. This repo contains the server app for the Bellerofonte project. It is based on NestJs v9 and Node v18.
+`pontegg.io` is opinionated [nest.js](https://nestjs.com) scaffolding aiming to reduce boilerplate, increase security. It aims to shorten all typical repetitive development tasks allowing to lunch new APIs fast and focus on particular software business logic. It does not makes your coffee yet.
+
+Attention!. It uses mongodb in 'schemaless' manner. Everything depends of robustness of your json schemes.
+
+read more about [pontegg.io](/docs/ponteggio.md)
 
 ## Installation
 
@@ -8,7 +12,7 @@ WizKey Bellerofonte server. This repo contains the server app for the Bellerofon
 $ pnpm install
 ```
 
-## Running the app
+## Running the pontegg.io
 
 ```bash
 # development
@@ -90,7 +94,7 @@ This section will describe some of the components used for this project.
 
 ### Logger
 
-The logger used for Dataroom project is [Pino](https://github.com/pinojs/pino), in particular in its NestJS flavour [`nestjs-pino`](https://github.com/iamolegga/nestjs-pino). The logger is not used as "vanilla", instead has been customized for redaction, tracing purposes, to exclude some paths and to adapt its behavior when executed in specified environments. Under `src/logger` all the logger configuration can be found. The `logger.ts` file contains the basic configurations of Pino Logger, here happens the OpenTelemetry components injection. The `logger.module.ts` file contains all the module settings as well as the redaction component ([`pino-noir`](https://github.com/pinojs/pino-noir)).
+The logger is [Pino](https://github.com/pinojs/pino), in particular in its NestJS flavour [`nestjs-pino`](https://github.com/iamolegga/nestjs-pino). The logger is not used as "vanilla", instead has been customized for redaction, tracing purposes, to exclude some paths and to adapt its behavior when executed in specified environments. Under `src/logger` all the logger configuration can be found. The `logger.ts` file contains the basic configurations of Pino Logger, here happens the OpenTelemetry components injection. The `logger.module.ts` file contains all the module settings as well as the redaction component ([`pino-noir`](https://github.com/pinojs/pino-noir)).
 
 ### Tracing and Metrics
 
