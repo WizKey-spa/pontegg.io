@@ -1,25 +1,20 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { prop } from '@typegoose/typegoose';
 import { Type } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class Notarization {
-  @prop()
   @ApiProperty()
   @IsString()
   notarizedPayload!: string;
 
-  @prop()
   @ApiProperty()
   @IsString()
   digest!: string;
 
-  @prop()
   @ApiProperty()
   @IsString()
   notarizedAt!: Date;
 
-  @prop()
   @ApiProperty()
   @IsString()
   transactionId!: string;
