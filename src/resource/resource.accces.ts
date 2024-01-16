@@ -1,17 +1,17 @@
 import { ForbiddenException } from '@nestjs/common';
-import { Allowed, Condition, Get } from '@Types/api';
+import { Allowed, Condition } from '@Types/api';
 
 export type AccessAllowance<Actor, Resource> = Array<[Actor, Allowed<Actor, Resource> | boolean]>;
 
 type Expectation = string | boolean;
 
-interface ApplyRules<Actor extends string, Resource> {
-  currentUserRoles: Record<Actor, any>;
-  rules: Get<Actor, Resource>;
-  resource: any;
-  mainValidationScheme: string;
-  process?: () => void;
-}
+// interface ApplyRules<Actor extends string, Resource> {
+//   currentUserRoles: Record<Actor, any>;
+//   rules: Get<Actor, Resource>;
+//   resource: any;
+//   mainValidationScheme: string;
+//   process?: () => void;
+// }
 
 export type CurrentUserData<Actor extends string | number | symbol> = Record<Actor, any> | undefined;
 
@@ -62,11 +62,14 @@ function verifyCondition(
   if (roleName === condition) {
     // we check user itself
     if (!userData) throw new ForbiddenException();
-    if (expected === 'customerId') {
-      const resourceBelongsToCustomer = resource.customerId === userData._id.toString();
+    const userIdName = `${roleName}Id`;
+    if (expected === userIdName) {
+      const userId = userData._id.toString();
+      const resourceUserId = resource[userIdName];
+      const resourceBelongsToCustomer = resourceUserId === userId;
       if (!resourceBelongsToCustomer) {
         throw new ForbiddenException(
-          `Can not modify resource not owned by current user (resource.customerId: "${resource.customerId}", user._id: "${userData._id}")`,
+          `Can not modify resource not owned by current user (${resourceName}.${userIdName}: "${resource[userIdName]}", ${roleName}._id: "${userData._id}")`,
         );
       }
       return true;
@@ -98,6 +101,7 @@ export async function grantGetResourceAccess<Actor extends string | number | sym
 }
 
 export function getAccessAllowance(userResourceAccessRoles, accessConditions) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const accessAllowance = Object.entries(userResourceAccessRoles).map(([name, user]) => [name, accessConditions[name]]);
   if (accessAllowance.length === 0) throw new ForbiddenException();
   return accessAllowance;
@@ -113,7 +117,6 @@ export async function grantModifySectionAccess<Actor, Resource>(
   accessRules: AccessAllowance<Actor, Resource>,
 ) {
   const accessAllowance = actualUserRoles.map((role) => [role, getRoleAccess(role, accessRules)]);
-  // TODO access depending on resource state
   if (accessAllowance.length === 0) throw new ForbiddenException();
   if (accessAllowance.some((role) => role[1] === true)) return true;
   // const userAccessAllowance = actualUserRoles.map((role) => verifyAccessRules(resource, role, accessRules));
