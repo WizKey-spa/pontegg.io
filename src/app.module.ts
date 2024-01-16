@@ -38,7 +38,6 @@ import { ValidatorModule } from './validator/validator.module';
           watch: true,
         },
       }),
-      // parser: I18nJsonParser,
       inject: [ConfigService],
     }),
   ],
