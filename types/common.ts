@@ -44,3 +44,11 @@ export enum LANGUAGES {
   EN = 'en',
   IT = 'it',
 }
+
+// here we define the types of the resources
+// eslint-disable-next-line @typescript-eslint/ban-types
+export type ResourcesTypes = {
+  someResource: any;
+};
+
+export type ResourceClassName = keyof ResourcesTypes extends string ? keyof ResourcesTypes : never;
