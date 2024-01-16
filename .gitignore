@@ -47,3 +47,5 @@ lerna-debug.log*
 
 /report*json
 /src/temp
+
+._*
