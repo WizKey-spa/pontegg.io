@@ -217,7 +217,7 @@ export default class ResourceBaseService {
     };
   }
 
-  async update<Document>(grant: JwtPayload, resourceId: ObjectId, data: any) {
+  async update<D>(grant: JwtPayload, resourceId: ObjectId, data: any) {
     // it should be used only by admin
 
     const userRoles = this.getUserGroups(grant);
@@ -225,7 +225,7 @@ export default class ResourceBaseService {
       throw new ForbiddenException();
     }
 
-    const resource = await this.accessResource<Document>(grant, resourceId);
+    const resource = await this.accessResource<D>(grant, resourceId);
     const allow = this.apiDef.update.let;
     const actualUserRoles = this.getActualUserRoles(userRoles, allow);
     await grantGetResourceAccess(this.resourceClassName, actualUserRoles, resource);
@@ -242,7 +242,7 @@ export default class ResourceBaseService {
     const preparedData = {
       ...this.prepare4mongo(this.resourceClassName, preparedResource),
     };
-    const updatedResource = await this.resourceQueryService._updateOne<Document>(
+    const updatedResource = await this.resourceQueryService._updateOne<D>(
       this.resourceClassName,
       resourceId,
       preparedData,
@@ -305,14 +305,14 @@ export default class ResourceBaseService {
     }
   }
 
-  async accessResourceModifySection<Document>(
+  async accessResourceModifySection<D>(
     grant: JwtPayload,
     operation: ApiOperation,
     resourceId: ObjectId,
     sectionName: string,
   ) {
     const userGroups = this.getUserGroups(grant);
-    const resource = await this.accessResource<Document>(grant, resourceId);
+    const resource = await this.accessResource<D>(grant, resourceId);
 
     const allowGet = this.apiDef.get.let;
     const actualUserGetRules = this.getActualUserRoles(userGroups, allowGet);
@@ -487,7 +487,7 @@ export default class ResourceBaseService {
     }
   }
 
-  async doUpsertSection(grant, operation, sectionName, resource, payload) {
+  async doUpsertSection(grant: JwtPayload, operation: ApiOperation, sectionName: string, resource, payload) {
     const validationSectionScheme = this.apiDef.sections[sectionName][operation].validate ?? `${sectionName}.section`;
     this.validate(validationSectionScheme, payload);
 
