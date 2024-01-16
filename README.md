@@ -1,6 +1,6 @@
 # pontegg.io
 
-*"Give us the tools and we finish the job"* - Winston Churchill 
+_"Give us the tools and we finish the job"_ - Winston Churchill
 
 `pontegg.io` is opinionated [nest.js](https://nestjs.com) scaffolding aiming to reduce boilerplate, increase security. It aims to shorten all typical repetitive development tasks allowing to lunch new APIs fast and focus on particular software business logic. It does not makes your coffee yet.
 
@@ -19,7 +19,7 @@ see further installation steps in [docs/instalation.md](docs/instalation.md)
 ## Features
 
 - [x] automatic CRUD REST API controller creation
-- [x] automatic API documentation (OpenAPI, swagger)
+- [x] automatic API documentation (OpenAPI/swagger)
 - [x] multilayer fine grained access control ([ACL](https://en.wikipedia.org/wiki/Access-control_list))
 - [x] role/group based access control to act upon the resource and its individual section ([RBAC](https://en.wikipedia.org/wiki/Role-based_access_control)).
 - [x] api declaratively defined in one json file.
@@ -27,9 +27,9 @@ see further installation steps in [docs/instalation.md](docs/instalation.md)
 - [x] out of the box file/s upload api
 - [x] automatic data validation [json schema](https://json-schema.org/)
 - [x] automatic data sanitization & coercion
-- [x] automatic data pagination
 - [x] automatic data sorting
 - [x] event sourcing (Events)
+- [x] resource section versioning
 
 ## Why?
 
@@ -265,10 +265,10 @@ There can be multiple 'if' conditions which correspond to 'OR' boolean operation
 ## TODO
 
 - [ ] add support SSE
+- [ ] automatic data pagination
 - [ ] add support for (GraphQL)[https://graphql.org/]
 - [ ] add support MongoDB Schemas
 - [ ] add support for complex state transition rules (OR, AND, NOT, etc.)
 - [ ] add support for rejecting uploads with not whitelisted file extensions
-- [ ] resource section versioning
 
 ## License
