@@ -10,9 +10,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 import config from './config';
-import mongoOptionsFactory from './lib/mongo-options-factory';
 import loggerOptionsFactory from './logger/logger.options.factory';
-
+import { DatabaseModule } from './lib/nestjs-database.module';
 import { StorageModule } from './storage/storage.module';
 import { AuthModule } from './auth/auth.module';
 import { ValidatorModule } from './validator/validator.module';
@@ -21,6 +20,7 @@ import { WalletModule } from './lib/blockchain/wallet.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [config] }),
+    DatabaseModule,
     ScheduleModule.forRoot(),
     LoggerModule.forRootAsync({
       useFactory: loggerOptionsFactory,
@@ -41,10 +41,7 @@ import { WalletModule } from './lib/blockchain/wallet.module';
       // parser: I18nJsonParser,
       inject: [ConfigService],
     }),
-    MongooseModule.forRootAsync({
-      useFactory: mongoOptionsFactory,
-      inject: [ConfigService],
-    }),
+
     WalletModule,
   ],
   controllers: [AppController],
