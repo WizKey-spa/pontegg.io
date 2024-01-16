@@ -9,6 +9,15 @@ import { StorageModule } from '../storage/storage.module';
 
 import { ResourceClassName } from '@Types/common';
 
+/**
+ * Creates a dynamic module for a resource.
+ * @param cls - The module class.
+ * @param resourceClassName - The name of the resource class.
+ * @param service - The service class.
+ * @param additionalControllers - Additional controller classes.
+ * @param providers - Additional providers.
+ * @returns A Promise that resolves to a DynamicModule.
+ */
 export const resourceModuleFactory = async <Document>(
   cls: Type<any>,
   resourceClassName: ResourceClassName,
