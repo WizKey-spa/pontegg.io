@@ -134,4 +134,3 @@ export const testFileNotarization = (entityId: string, data: string, date: Date 
 };
 
 export const customerToken = getSignedToken();
-export const adminToken = getSignedToken('bellerofonte-admin');
