@@ -31,6 +31,7 @@ import { DocumentMetadataDTO } from './document.dto';
 import { Actor, JwtPayload } from '@Types/auth';
 import { FileUpload } from '@Types/document';
 import API, { Let, Section } from '@Types/api';
+import { ResourceClassName } from '@Types/common';
 
 type ResponseWithHeader = Response & { header: any; status: any };
 
@@ -45,7 +46,10 @@ export const getRoles = (action: { let?: Let<any, any> }) => {
   );
 };
 
-export function getControllerClass<Document>(resourceClassName: string, apiDef: API<any, Document>): Type<any>[] {
+export function getControllerClass<Document>(
+  resourceClassName: ResourceClassName,
+  apiDef: API<any, Document>,
+): Type<any>[] {
   const responseScheme = { ...apiDef.scheme, properties: { _id: { type: 'string' }, ...apiDef.scheme.properties } };
   const sectionNames = Object.keys(apiDef.sections);
   const sectionNamesWithDocuments = sectionNames.filter((sectionName) => apiDef.sections[sectionName].documents);

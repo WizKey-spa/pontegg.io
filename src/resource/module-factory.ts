@@ -8,9 +8,11 @@ import ResourceQueryService from '../resource/resource.query.service';
 import { StorageModule } from '../storage/storage.module';
 import { WalletModule } from '../lib/blockchain/wallet.module';
 
+import { ResourceClassName } from '@Types/common';
+
 export const resourceModuleFactory = async <Document>(
   cls: Type<any>,
-  resourceClassName: string,
+  resourceClassName: ResourceClassName,
   service: Type<any>,
   additionalControllers?: Type<any>[],
   providers?: Provider[],
@@ -54,7 +56,7 @@ export const resourceModuleFactory = async <Document>(
 };
 
 export const moduleTestFactory = async (
-  resourceClassName: string,
+  resourceClassName: ResourceClassName,
   service: Type<any>,
   controller?: Type<any>,
   providers?: any[],

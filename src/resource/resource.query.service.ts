@@ -194,7 +194,7 @@ export default class ResourceQueryService {
   //   ...resourceDefs[resourceClassName as keyof typeof resourceDefs].projections.default,
   // ];
 
-  validate(resourceClassName: string, operation: ValidateOperation, data: any) {
+  validate(resourceClassName: ResourceClassName, operation: ValidateOperation, data: any) {
     const validator = this.validatorService.getValidator(resourceClassName);
     const validation = validator.getSchema(`asset.${operation}`);
     const assetIsValid = validation && validation(data);

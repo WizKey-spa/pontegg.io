@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import Ajv from 'ajv';
 
 import { setValidator } from '../lib/validator';
+import { ResourceClassName } from '@Types/common';
 
 type Validators = Record<string, Ajv>;
 
@@ -15,13 +16,16 @@ export class ValidatorService {
     (async () => {
       this.validators = Object.fromEntries(
         await Promise.all(
-          resourcesNames.map(async (resourceName) => [resourceName, await setValidator(schemesDir, resourceName)]),
+          resourcesNames.map(async (resourceName: ResourceClassName) => [
+            resourceName,
+            await setValidator(schemesDir, resourceName),
+          ]),
         ),
       );
     })();
   }
 
-  getValidator(resourceName: string): Ajv {
+  getValidator(resourceName: ResourceClassName): Ajv {
     return this.validators[resourceName];
   }
 }
