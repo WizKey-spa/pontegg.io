@@ -1,14 +1,20 @@
 import { IEvent } from '@nestjs/cqrs';
 import { JwtPayload, User } from '@Types/auth';
+import { ApiOperation } from '@Types/api';
 
 export class ResourceCreatedEvent implements IEvent {
-  constructor(public resourceName: string, public payload: any, public resourceId: string, public actor: User) {}
+  constructor(
+    public resourceName: string,
+    public payload: any,
+    public resourceId: string,
+    public actor: User,
+  ) {}
 }
 
 export class ResourceUpdatedEvent implements IEvent {
   constructor(
     public resourceName: string,
-    public operation: 'create' | 'update',
+    public operation: ApiOperation,
     public payload: any,
     public resource: Record<string, any>,
     public grant: JwtPayload,
@@ -18,5 +24,9 @@ export class ResourceUpdatedEvent implements IEvent {
 }
 
 export class ResourceDeletedEvent implements IEvent {
-  constructor(public resourceName: string, public resourceId: string, public actor: User) {}
+  constructor(
+    public resourceName: string,
+    public resourceId: string,
+    public actor: User,
+  ) {}
 }
