@@ -1,7 +1,8 @@
+import { ResourceClassName } from '@Types/common';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 
-export const setValidator = async (schemesDir, resourceClassName) => {
+export const setValidator = async (schemesDir, resourceClassName: ResourceClassName) => {
   // this.validator = resourceValidators[resourceClassName];
   const importAjv = new Ajv({ strictSchema: false, coerceTypes: true }); // removeAdditional: true
   addFormats(importAjv);
