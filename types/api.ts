@@ -6,23 +6,26 @@ export interface If {
   [key: string]: string | string[] | boolean;
 }
 
-type WithKey<K extends string | number | symbol> = {
-  [k in K]: boolean;
-};
+export type ApiOperation = 'get' | 'create' | 'update' | 'delete';
 
-export type ApiOperation = 'get' | 'create' | 'update' | 'delete' | 'list';
+export type Set<Resource> = { [key in keyof Partial<Resource>]: Resource[key] };
 
 type Upsert<Actor extends string | number | symbol, Resource> = {
   let?: Let<Actor, Resource>;
-  set?: { [key in keyof Partial<Resource>]: any };
-  validate?: string;
+  set?: { [key in keyof Partial<Resource>]: Resource[key] };
 };
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type Doc = { mimeTypes: string[] };
 
 export interface Section<Actor extends string | number | symbol, Resource> {
   create?: Upsert<Actor, Resource>;
   update?: Upsert<Actor, Resource>;
+  delete?: { let?: Let<Actor, Resource> };
   validate?: string;
-  hasDocuments?: boolean;
+  document?: { mimeTypes: string[]; maxSize?: number };
+  documents?: { mimeTypes: string[]; maxCount: number };
+  versioned?: boolean;
 }
 
 type Response = {
@@ -36,10 +39,12 @@ type Response = {
   type?: any;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export type Access<Actor extends string | number | symbol> = {
   [byRole: string]: string | boolean;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export type Condition<Actor, Resource> = {
   for: Actor;
   if?: If;
@@ -51,21 +56,16 @@ export type Allowed<Actor, Resource> = Actor | Condition<Actor, Resource>;
 
 export type Let<Actor, Resource> = Array<Allowed<Actor, Resource>>;
 
-export type Set = { [value: string]: any };
-
 interface CreateUpdate<Actor extends string, Resource> {
   let?: Let<Actor, Resource>;
   validate?: { [byRole: string]: string };
-  set?: Set;
+  set?: Set<Resource>;
   responses?: {
     [value: string]: Response;
   };
 }
 
-// interface Resource {
-//   state: string[];
-// }
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function getTypeofProperty<T, K extends keyof T>(o: T, name: K) {
   return typeof o[name];
 }
@@ -96,8 +96,9 @@ export default interface API<Actor extends string, Resource> {
     [sectionName in keyof Partial<Resource>]: Section<Actor, Resource>;
   };
   get: Get<Actor, Resource>;
-  create: CreateUpdate<Actor, Resource>;
-  update: CreateUpdate<Actor, Resource>;
-  delete: Delete<Actor, Resource>;
+  create?: CreateUpdate<Actor, Resource>;
+  update?: CreateUpdate<Actor, Resource>;
+  delete?: Delete<Actor, Resource>;
   list: List<Actor, Resource>;
+  coerceFields?: Record<string, string[]>;
 }
