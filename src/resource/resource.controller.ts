@@ -46,10 +46,7 @@ export const getRoles = (action: { let?: Let<any, any> }) => {
   );
 };
 
-export function getControllerClass<Document>(
-  resourceClassName: ResourceClassName,
-  apiDef: API<any, Document>,
-): Type<any>[] {
+export function getControllerClass<D>(resourceClassName: ResourceClassName, apiDef: API<any, D>): Type<any>[] {
   const responseScheme = { ...apiDef.scheme, properties: { _id: { type: 'string' }, ...apiDef.scheme.properties } };
   const sectionNames = Object.keys(apiDef.sections);
   const sectionNamesWithDocuments = sectionNames.filter((sectionName) => apiDef.sections[sectionName].documents);
@@ -88,10 +85,7 @@ export function getControllerClass<Document>(
   @Controller(resourceClassName)
   @ApiTags(resourceClassName)
   class ResourceController {
-    constructor(
-      // @Inject('RESOURCE_NAME') resourceClassName: string,
-      @Inject('RESOURCE_SERVICE') private readonly resourceService: ResourceBaseService,
-    ) {}
+    constructor(@Inject('RESOURCE_SERVICE') private readonly resourceService: ResourceBaseService) {}
 
     @Post('')
     @Roles(getRoles(apiDef.create))
@@ -111,7 +105,7 @@ export function getControllerClass<Document>(
     // @ApiCreatedResponse({ schema: apiDef.scheme })
     @ApiOperation({ summary: `creates ${resourceClassName}` })
     async create(@Jwt() grant: JwtPayload, @Body() data: any) {
-      return this.resourceService.create<Document>(grant, data);
+      return this.resourceService.create<D>(grant, data);
     }
 
     @Get('/')
@@ -135,7 +129,7 @@ export function getControllerClass<Document>(
     @ApiOperation({ summary: `gets list of ${resourceClassName}` })
     list(@Jwt() grant: JwtPayload) {
       const cursor = new CursorDTO();
-      return this.resourceService.list<Document>(grant, cursor);
+      return this.resourceService.list<D>(grant, cursor);
     }
 
     @Get(':Id')
@@ -149,7 +143,7 @@ export function getControllerClass<Document>(
     // @ApiOkResponse({ schema: responseScheme })
     @ApiOperation({ summary: `gets ${resourceClassName} data` })
     get(@Jwt() grant: JwtPayload, @Param('Id', objId) Id: ObjectId) {
-      return this.resourceService.get<Document>(grant, Id);
+      return this.resourceService.get<D>(grant, Id);
     }
 
     @Delete(':Id')
@@ -175,7 +169,7 @@ export function getControllerClass<Document>(
     })
     @ApiOperation({ summary: `updates ${resourceClassName}'s data` })
     async update(@Param('Id', objId) Id: ObjectId, @Jwt() grant: JwtPayload, @Body() data: any) {
-      return this.resourceService.update<Document>(grant, Id, data);
+      return this.resourceService.update<D>(grant, Id, data);
     }
 
     // @Get(':Id/:sectionName')
@@ -223,7 +217,7 @@ ${JSON.stringify(apiDef.scheme.properties[sectionName], null, 2)}
       @Jwt() grant: JwtPayload,
       @Body() data: any,
     ) {
-      return this.resourceService.upsertSection<Document>(grant, 'create', Id, sectionName, data);
+      return this.resourceService.upsertSection<D>(grant, 'create', Id, sectionName, data);
     }
 
     @Put(':Id/:sectionName')
@@ -241,7 +235,7 @@ ${JSON.stringify(apiDef.scheme.properties[sectionName], null, 2)}
       @Param('sectionName') sectionName: string,
       @Body() data: any,
     ) {
-      return this.resourceService.upsertSection<Document>(grant, 'update', Id, sectionName, data);
+      return this.resourceService.upsertSection<D>(grant, 'update', Id, sectionName, data);
     }
 
     // Documents endpoints
