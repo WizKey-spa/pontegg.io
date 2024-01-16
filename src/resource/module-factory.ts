@@ -60,7 +60,6 @@ export const moduleTestFactory = async (
   controller?: Type<any>,
   providers?: any[],
 ) => {
-  // const validator = resourceValidators[resourceClassName];
   const apiDef = await import(`../${resourceClassName}/${resourceClassName}.api`);
   const controllers = getControllerClass(resourceClassName, apiDef);
   if (controller) {
@@ -68,7 +67,6 @@ export const moduleTestFactory = async (
   }
   const serviceName = `${resourceClassName.toUpperCase()}_SERVICE`;
   return {
-    // imports: [AuthModule],
     provide: serviceName,
     providers: [
       ResourceQueryService,
@@ -92,10 +90,6 @@ export const moduleTestFactory = async (
         provide: 'API_DEF',
         useValue: apiDef,
       },
-      // {
-      //   provide: 'VALIDATOR',
-      //   useValue: validator,
-      // },
       ...(providers || []),
     ],
     exports: [service],
