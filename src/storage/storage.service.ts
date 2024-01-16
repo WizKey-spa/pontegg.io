@@ -1,14 +1,14 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { pipeline, Readable, Transform } from 'stream';
 import crypto from 'crypto';
+import { pipeline, Readable, Transform } from 'stream';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 
 import { hash } from '../lib/hash';
 import { FileProvider } from './providers/FileProvider';
 import { StoredFileDTO } from './StoredFile.entity';
 import { Notarization } from '../common.dto';
 
-import { CompressionProvider } from './providers/CompressionProvider';
+// import { CompressionProvider } from './providers/CompressionProvider';
 
 const HASH_ALGORITHM = 'sha256';
 export type FileWithKey = StoredFileDTO & { key: string };
@@ -18,8 +18,7 @@ export type NotarizedFile = StoredFileDTO & { notarization: Notarization };
 export class StorageService {
   constructor(
     @Inject('FILE_PROVIDER') private readonly provider: FileProvider,
-    @InjectPinoLogger(StorageService.name) private readonly logger: PinoLogger,
-    @Inject(CompressionProvider) private readonly compressionProvider: CompressionProvider,
+    @InjectPinoLogger(StorageService.name) private readonly logger: PinoLogger, // @Inject(CompressionProvider) private readonly compressionProvider: CompressionProvider,
   ) {}
 
   hasKey(file: StoredFileDTO): file is FileWithKey {
@@ -141,24 +140,6 @@ export class StorageService {
 
   async checkFileExists(path: string) {
     return this.provider.checkFileExists(this.provider.absPath(path));
-  }
-
-  async compress(buf: Buffer | Readable, mimetype: string, filename: string, key: string) {
-    switch (mimetype) {
-      case 'application/pdf':
-        await this.compressionProvider.compressPDF(filename, buf, key);
-    }
-  }
-
-  async extractSinglePages(buf: Buffer | Readable, mimetype: string, filename: string, key: string) {
-    switch (mimetype) {
-      case 'application/pdf':
-        await this.compressionProvider.extractAndSavePagesFromPDF(filename, buf, key);
-    }
-  }
-
-  async countPDFPages(buf: Buffer): Promise<number> {
-    return await this.compressionProvider.getPDFPagesCount(buf);
   }
 
   getBasePath() {

@@ -5,8 +5,8 @@ import { LocalProvider } from './providers/LocalProvider';
 import { S3Provider } from './providers/S3Provider';
 import { PinoLogger } from 'nestjs-pino';
 import AWS, { S3 } from 'aws-sdk';
-import { CompressionProvider } from './providers/CompressionProvider';
-import { CompressionProviderEventService } from './events/CompressionProviderEventService';
+// import { CompressionProvider } from './providers/CompressionProvider';
+// import { CompressionProviderEventService } from './events/CompressionProviderEventService';
 
 @Module({
   providers: [
@@ -27,9 +27,8 @@ import { CompressionProviderEventService } from './events/CompressionProviderEve
       useFactory: () => new AWS.S3(),
       inject: [ConfigService, PinoLogger],
     },
-    CompressionProvider,
-    CompressionProviderEventService,
+    // CompressionProvider,
   ],
-  exports: [StorageService, CompressionProviderEventService],
+  exports: [StorageService],
 })
 export class StorageModule {}

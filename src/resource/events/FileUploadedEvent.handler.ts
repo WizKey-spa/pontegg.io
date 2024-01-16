@@ -11,9 +11,10 @@ export class FileUploadedEventHandler implements IEventHandler<FileUploadedEvent
     private readonly logger: PinoLogger,
   ) {}
   handle(evt: FileUploadedEvent) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { file, key } = evt as FileUploadedEvent;
     // this.storage.compress(file.buffer, file.mimetype, file.originalname, key);
-    this.storage.extractSinglePages(file.buffer, file.mimetype, file.originalname, key);
+    // this.storage.extractSinglePages(file.buffer, file.mimetype, file.originalname, key);
     this.logger.debug('FileUploaded event handling completed');
   }
 }
