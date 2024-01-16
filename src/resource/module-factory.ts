@@ -6,7 +6,6 @@ import { ValidatorModule } from '../validator/validator.module';
 import { getControllerClass } from '../resource/resource.controller';
 import ResourceQueryService from '../resource/resource.query.service';
 import { StorageModule } from '../storage/storage.module';
-import { WalletModule } from '../lib/blockchain/wallet.module';
 
 import { ResourceClassName } from '@Types/common';
 
@@ -25,7 +24,7 @@ export const resourceModuleFactory = async <Document>(
   const serviceName = `${resourceClassName.toUpperCase()}_SERVICE`;
   return {
     module: cls,
-    imports: [StorageModule, CqrsModule, ValidatorModule, HttpModule, WalletModule],
+    imports: [StorageModule, CqrsModule, ValidatorModule, HttpModule],
     providers: [
       ResourceQueryService,
       service,
