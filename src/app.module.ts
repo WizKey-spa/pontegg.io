@@ -2,7 +2,7 @@ import path from 'path';
 import { Module } from '@nestjs/common';
 import { I18nModule } from 'nestjs-i18n';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ScheduleModule } from '@nestjs/schedule';
+// import { ScheduleModule } from '@nestjs/schedule';
 import { LoggerModule } from 'nestjs-pino';
 
 import { AppController } from './app.controller';
@@ -14,13 +14,12 @@ import { DatabaseModule } from './lib/nestjs-database.module';
 import { StorageModule } from './storage/storage.module';
 import { AuthModule } from './auth/auth.module';
 import { ValidatorModule } from './validator/validator.module';
-import { WalletModule } from './lib/blockchain/wallet.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [config] }),
     DatabaseModule,
-    ScheduleModule.forRoot(),
+    // ScheduleModule.forRoot(),
     LoggerModule.forRootAsync({
       useFactory: loggerOptionsFactory,
       inject: [ConfigService],
@@ -28,6 +27,8 @@ import { WalletModule } from './lib/blockchain/wallet.module';
     StorageModule,
     AuthModule,
     ValidatorModule,
+
+    // SET YOUR MODULES HERE
 
     I18nModule.forRootAsync({
       useFactory: (config: ConfigService) => ({
@@ -40,8 +41,6 @@ import { WalletModule } from './lib/blockchain/wallet.module';
       // parser: I18nJsonParser,
       inject: [ConfigService],
     }),
-
-    WalletModule,
   ],
   controllers: [AppController],
   providers: [AppService],
