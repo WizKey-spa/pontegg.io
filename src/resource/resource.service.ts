@@ -11,7 +11,7 @@ import { EventBus } from '@nestjs/cqrs';
 import { ConfigService } from '@nestjs/config';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
-import { Db, ObjectId, FindOptions, Document, WithId, Filter } from 'mongodb';
+import { Db, ObjectId, FindOptions, Document, Filter } from 'mongodb';
 import { createHash } from 'crypto';
 import * as _ from 'lodash';
 import Ajv from 'ajv';
@@ -33,6 +33,7 @@ import { Let, Allowed, ApiOperation, Condition } from '@Types/api';
 // import { Cursor } from 'src/common.dto';
 import { ValidatorService } from '../validator/validator.service';
 import { CurrentUserData, CurrentUserRoles, grantGetResourceAccess, verifyAccess } from './resource.accces';
+import { ResourceClassName } from '@Types/common';
 
 export enum ValidateOperation {
   CREATE = 'create',
@@ -47,7 +48,7 @@ export default class ResourceBaseService {
   private validator: Ajv;
 
   constructor(
-    @Inject('RESOURCE_NAME') readonly resourceClassName: string,
+    @Inject('RESOURCE_NAME') readonly resourceClassName: ResourceClassName,
     @Inject('API_DEF') readonly apiDef: Record<string, any>,
     @Inject(ValidatorService) public readonly validatorService: ValidatorService,
     readonly eventBus: EventBus,
@@ -82,12 +83,12 @@ export default class ResourceBaseService {
     }, []);
   }
 
-  async get<Document>(grant: JwtPayload, resourceId: ObjectId): Promise<WithId<Document>> {
+  async get<D>(grant: JwtPayload, resourceId: ObjectId): Promise<D> {
     const allow = this.apiDef.get.let;
     if (!allow) {
       throw new NotImplementedException();
     }
-    const resource = await this.accessResource<Document>(grant, resourceId);
+    const resource = await this.accessResource<D>(grant, resourceId);
     const actualUserRoles = this.getActualUserRoles(this.getUserGroups(grant), allow);
     await grantGetResourceAccess(this.resourceClassName, actualUserRoles, resource);
     return resource;
@@ -175,6 +176,7 @@ export default class ResourceBaseService {
     const actualUserRoles = this.getActualUserRoles(currentUserRoles, allow);
 
     // Validate & append
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     actualUserRoles.forEach(([userType, rule]) => {
       const validationScheme = (rule as Condition<Actor, Document>).validate;
       data = this.validate(validationScheme, data);
@@ -230,6 +232,7 @@ export default class ResourceBaseService {
 
     const preparedResource = { ...resource, ...data };
     // Validate
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     actualUserRoles.forEach(([userType, rule]) => {
       const validationScheme = this.getUpdateValidationScheme(userType as string, 'update');
       data = this.validate(validationScheme, preparedResource);
@@ -267,7 +270,7 @@ export default class ResourceBaseService {
     throw new Error(`No ${operation} validation scheme found for role ${role}`);
   }
 
-  async insertSection(grant: JwtPayload, resourceId: string, sectionName: string, data: any) {
+  async insertSection(grant: JwtPayload, resourceId: ObjectId, sectionName: string, data: any) {
     const preparedData = this.prepare4mongo(this.resourceClassName, data, sectionName);
     return this.resourceQueryService._updateOne(this.resourceClassName, resourceId, { [sectionName]: preparedData });
   }
@@ -334,14 +337,14 @@ export default class ResourceBaseService {
     return resource;
   }
 
-  async upsertSection<Document>(
+  async upsertSection<D>(
     grant: JwtPayload,
     operation: ApiOperation,
     resourceId: ObjectId,
     sectionName: string,
     payload: any,
   ) {
-    const resource = await this.accessResourceModifySection(grant, operation, resourceId, sectionName);
+    const resource = await this.accessResourceModifySection<D>(grant, operation, resourceId, sectionName);
 
     // const userGroupNames = Object.keys(this.getUserGroups(grant));
     // if (userGroupNames.length === 0) {
@@ -377,8 +380,10 @@ export default class ResourceBaseService {
     return deletedResource;
   }
 
-  async getDocument(grant: JwtPayload, resourceId: string, documentId: string) {
-    return this.resourceQueryService._getResourceById(this.resourceClassName, resourceId, [`documents.${documentId}`]);
+  async getDocument<D>(grant: JwtPayload, resourceId: string, documentId: string): Promise<D> {
+    return this.resourceQueryService._getResourceById<D>(this.resourceClassName, new ObjectId(resourceId), [
+      `documents.${documentId}`,
+    ]);
   }
 
   async download(
@@ -425,7 +430,7 @@ export default class ResourceBaseService {
       hashMd5,
       createdAt: new Date(),
       updatedAt: new Date(),
-      pageCount: file.mimetype === 'application/pdf' ? await this.storage.countPDFPages(file.buffer) : 0,
+      // pageCount: file.mimetype === 'application/pdf' ? await this.storage.countPDFPages(file.buffer) : 0,
     };
     if (checkIfIsPresent && this.storage.getFile(fileDoc)) {
       throw new BadRequestException(`File ${file.originalname} already exists at ${key}`);
@@ -447,7 +452,7 @@ export default class ResourceBaseService {
     }
   }
 
-  async uploadFile<T>(
+  async uploadFile(
     grant: JwtPayload,
     operation: ApiOperation,
     resourceId: ObjectId,
@@ -458,6 +463,7 @@ export default class ResourceBaseService {
     if (!file && !payload) {
       throw new BadRequestException('No file provided');
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { path, ...updatedData } = payload;
     const resource = await this.accessResourceModifySection(grant, operation, resourceId, sectionName);
 
@@ -559,7 +565,7 @@ export default class ResourceBaseService {
   }
 
   async getSectionDocument(grant: JwtPayload, resourceId: string, sectionName: string, documentId: string) {
-    return this.resourceQueryService._getResourceById(this.resourceClassName, resourceId, [
+    return this.resourceQueryService._getResourceById(this.resourceClassName, new ObjectId(resourceId), [
       `${sectionName}.${documentId}`,
     ]);
   }
@@ -581,13 +587,45 @@ export default class ResourceBaseService {
     return data;
   };
 
-  async accessResource<Document>(
+  async accessResource<D>(
     grant: JwtPayload,
-    resourceId: string | ObjectId,
+    resourceId: ObjectId,
     // excludeSections: string[],
     options?: FindOptions<any>,
-  ): Promise<WithId<Document>> {
-    return await this.resourceQueryService.accessResource<Document>(grant, this.resourceClassName, resourceId, options);
+  ): Promise<D> {
+    return await this.resourceQueryService.accessResource<D>(grant, this.resourceClassName, resourceId, options);
+  }
+
+  async deleteDocument(grant: JwtPayload, resourceId: ObjectId, sectionName: string, fileId: string) {
+    const resource = await this.accessResourceModifySection(grant, 'delete', resourceId, sectionName);
+    const currentDocuments: StoredFile[] = resource[sectionName] || [];
+    const documentToDelete = currentDocuments.filter((doc) => doc.hash256.slice(0, 20) === fileId);
+    if (documentToDelete.length === 0) {
+      throw new NotFoundException(`Document with id ${fileId} not found`);
+    }
+    const remainingDocuments = currentDocuments.filter((doc) => doc.hash256.slice(0, 20) !== fileId);
+    const isVersioned = this.apiDef.sections[sectionName].versioned;
+    if (!isVersioned) {
+      await this.storage.deleteFile(documentToDelete[0]);
+    }
+    return await this.doUpsertSection(grant, 'update', sectionName, resource, remainingDocuments);
+  }
+
+  async deleteSection(grant: JwtPayload, resourceId: ObjectId, sectionName: string) {
+    const resource = await this.accessResourceModifySection(grant, 'delete', resourceId, sectionName);
+    const isVersioned = this.apiDef.sections[sectionName].versioned;
+    const hasDocument = this.apiDef.sections[sectionName].document;
+    const hasDocuments = this.apiDef.sections[sectionName].documents;
+
+    if (!isVersioned && hasDocument) {
+      const section: StoredFile = resource[sectionName];
+      await this.storage.deleteFile(section);
+    }
+    if (!isVersioned && hasDocuments) {
+      const section: StoredFile[] = resource[sectionName];
+      section.forEach(async (storedDocument) => await this.storage.deleteFile(storedDocument));
+    }
+    return await this.doUpsertSection(grant, 'update', sectionName, resource, null);
   }
 }
 

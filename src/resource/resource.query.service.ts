@@ -1,27 +1,13 @@
 import { Injectable, ForbiddenException, BadRequestException, NotFoundException, Inject } from '@nestjs/common';
-import { InjectConnection } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
 
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import {
-  ObjectId,
-  FindOptions,
-  InsertOneOptions,
-  BulkWriteOptions,
-  UpdateFilter,
-  Sort,
-  Document,
-  WithId,
-  OptionalUnlessRequiredId,
-  Filter,
-} from 'mongodb';
-import { Connection, FilterQuery } from 'mongoose';
-import * as _ from 'lodash';
+import { ObjectId, FindOptions, Sort, Filter, Db, WithId, OptionalUnlessRequiredId } from 'mongodb';
 
 import { ValidatorService } from '../validator/validator.service';
 
+import { Timestamped, Cursor, ResourcesTypes, ResourceClassName } from '@Types/common';
 import { JwtPayload } from '@Types/auth';
-import { Cursor, Timestamped } from '@Types/common';
 
 export enum ValidateOperation {
   CREATE = 'create',
@@ -35,10 +21,10 @@ export default class ResourceQueryService {
   constructor(
     @Inject(ValidatorService) private readonly validatorService: ValidatorService,
     // private readonly http: HttpService,
-    @InjectConnection() private readonly connection: Connection,
     // private readonly authService: AuthService,
     @Inject(ConfigService) private readonly conf: ConfigService,
     @InjectPinoLogger(ResourceQueryService.name) private readonly logger: PinoLogger,
+    @Inject('DB') private readonly db: Db,
   ) {
     this.supportedResources = this.conf.get('SUPPORTED_RESOURCES').split(',');
   }
@@ -47,128 +33,109 @@ export default class ResourceQueryService {
   //   return resourceDefs[resourceClassName as keyof typeof resourceDefs].sections;
   // }
 
-  async _findOne<Document>(
-    collectionName: string,
-    search: FilterQuery<Document>,
-    options?: FindOptions<Document>,
-  ): Promise<WithId<Document>> {
+  async _findOne<D>(collectionName: ResourceClassName, search, options?): Promise<D> {
     this.checkValidResourceCollection(collectionName);
-    return this.connection.db.collection<Document>(collectionName).findOne(search, options);
+    return this.db.collection<D>(collectionName).findOne<D>(search, options);
   }
 
-  async _getResourceById<Document>(
-    collectionName: string,
-    resourceId: string | ObjectId,
-    projection?: string[],
-  ): Promise<WithId<Document>> {
+  async _getResourceById<D>(collectionName: keyof ResourcesTypes, resourceId: ObjectId, projection?: string[]) {
     // return this._findOne(collectionName, { _id: resourceId instanceof ObjectId ? resourceId : new ObjectId(resourceId) }, {});
-    return this._findOne<Document>(
-      collectionName,
-      { _id: resourceId instanceof ObjectId ? resourceId : new ObjectId(resourceId) },
-      { projection: projection },
-    );
+    return this._findOne<D>(collectionName, { _id: resourceId }, { projection: projection });
   }
 
-  async _create<Document>(
-    collectionName: string,
-    assetData: OptionalUnlessRequiredId<Document>,
-    options?: InsertOneOptions,
-  ): Promise<{ id: string }> {
+  async _create<D>(collectionName: ResourceClassName, assetData: Partial<D>, options?) {
     this.checkValidResourceCollection(collectionName);
-    const created = this.connection.db
-      .collection<Document>(collectionName)
-      .insertOne({ ...assetData, createdAt: new Date(), updatedAt: new Date() }, options);
+    const created = this.db
+      .collection<D>(collectionName)
+      .insertOne(
+        { ...assetData, createdAt: new Date(), updatedAt: new Date() } as unknown as OptionalUnlessRequiredId<D>,
+        options,
+      );
     return { id: (await created).insertedId.toString() };
   }
 
-  async _createMany<Document>(
-    collectionName: string,
-    assetsData: OptionalUnlessRequiredId<Document>[],
-    options?: BulkWriteOptions,
-  ): Promise<any> {
+  async _createMany<D>(collectionName: ResourceClassName, assetsData, options?) {
     this.checkValidResourceCollection(collectionName);
-    const created = await this.connection.db.collection<Document>(collectionName).insertMany(assetsData, options);
+    const created = await this.db.collection<D>(collectionName).insertMany(assetsData, options);
     return created;
   }
 
-  async _aggregate<Document>(collectionName: string, aggregation: any) {
+  async _aggregate<D>(collectionName: ResourceClassName, aggregation: any) {
     this.checkValidResourceCollection(collectionName);
-    return await (await this.connection.db.collection<Document>(collectionName).aggregate(aggregation)).toArray();
+    return await (await this.db.collection<D>(collectionName).aggregate(aggregation)).toArray();
   }
 
-  async _find<Document>(
-    collectionName: string,
-    filter: Filter<Document> = {},
-    options?: FindOptions<Document>,
-  ): Promise<WithId<Document>[]> {
+  async _find<D>(collectionName: ResourceClassName, filter = {}, options?): Promise<WithId<D>[]> {
     this.checkValidResourceCollection(collectionName);
-    return (await this.connection.db.collection<Document>(collectionName).find(filter, options)).toArray();
+    return this.db.collection<D>(collectionName).find(filter, options).toArray();
   }
 
-  async _deleteMany<Document>(collectionName: string, search: FilterQuery<Document> = {}) {
+  async _deleteMany<D>(collectionName: ResourceClassName, search = {}) {
     this.checkValidResourceCollection(collectionName);
-    return this.connection.db.collection<Document>(collectionName).deleteMany(search);
+    return this.db.collection<D>(collectionName).deleteMany(search);
   }
 
-  async _delete(collectionName: string, resourceId: string | ObjectId): Promise<any> {
+  async _delete<D>(collectionName: ResourceClassName, resourceId: ObjectId) {
     this.checkValidResourceCollection(collectionName);
-    return this.connection.db
+    return this.db.collection<D>(collectionName).deleteOne({ _id: resourceId } as unknown as Filter<D>);
+  }
+
+  async _count<D>(collectionName: ResourceClassName, search: Filter<D>) {
+    this.checkValidResourceCollection(collectionName);
+    return this.db.collection<D>(collectionName).countDocuments(search);
+  }
+
+  async _updateOne<D>(collectionName: ResourceClassName, resourceId: ObjectId, update: Partial<D>) {
+    this.checkValidResourceCollection(collectionName);
+    return this.db
       .collection(collectionName)
-      .deleteOne({ _id: resourceId instanceof ObjectId ? resourceId : new ObjectId(resourceId) });
+      .findOneAndUpdate({ _id: resourceId }, { $set: update }, { returnDocument: 'after' });
   }
 
-  async _count<Document>(collectionName: string, search: FilterQuery<Document>) {
+  async _versionOne<D>(collectionName: ResourceClassName, resourceId: ObjectId, update: D, version: any) {
     this.checkValidResourceCollection(collectionName);
-    return this.connection.db.collection<Document>(collectionName).countDocuments(search);
-  }
-
-  async _updateOne<Document>(collectionName: string, resourceId: string | ObjectId, update: UpdateFilter<Document>) {
-    this.checkValidResourceCollection(collectionName);
-    const filter = {
-      _id: resourceId instanceof ObjectId ? resourceId : new ObjectId(resourceId),
-    } as unknown as Filter<Document>;
-    return this.connection.db
+    return this.db
       .collection(collectionName)
-      .findOneAndUpdate(filter, { $set: update }, { returnDocument: 'after' });
+      .findOneAndUpdate({ _id: resourceId }, { $set: update, $push: version }, { returnDocument: 'after' });
   }
 
-  async _updateMany(collectionName: string, filter: FilterQuery<any>, update: UpdateFilter<any>): Promise<any> {
+  async _updateMany<D>(collectionName: ResourceClassName, filter, update) {
     this.checkValidResourceCollection(collectionName);
-    return this.connection.db.collection(collectionName).updateMany(filter, update, { upsert: true });
+    return this.db.collection<D>(collectionName).updateMany(filter, update, { upsert: true });
   }
 
-  async _createIndexes(collectionName: string, indexes): Promise<any | null> {
+  async _createIndexes(collectionName: ResourceClassName, indexes): Promise<any | null> {
     this.checkValidResourceCollection(collectionName);
     // https://www.mongodb.com/docs/v5.0/reference/method/db.collection.createIndexes/#mongodb-method-db.collection.createIndexes
     try {
-      await this.connection.db.collection(collectionName).createIndexes(indexes);
+      await this.db.collection(collectionName).createIndexes(indexes);
     } catch (e) {
       this.logger.error(e);
     }
   }
 
-  async _dropIndexes(collectionName: string): Promise<any | null> {
+  async _dropIndexes(collectionName: ResourceClassName): Promise<any | null> {
     this.checkValidResourceCollection(collectionName);
     // https://www.mongodb.com/docs/v5.0/reference/method/db.collection.dropIndexes/#mongodb-method-db.collection.dropIndexes
     try {
-      await this.connection.db.collection(collectionName).dropIndexes();
+      await this.db.collection(collectionName).dropIndexes();
     } catch (e) {
       this.logger.error(e);
     }
   }
 
-  async _attachValidator(collectionName: string, scheme): Promise<any | null> {
+  async _attachValidator(collectionName: ResourceClassName, scheme): Promise<any | null> {
     this.checkValidResourceCollection(collectionName);
     // https://stackoverflow.com/questions/44318188/add-new-validator-to-existing-collection
     const validator = JSON.parse(JSON.stringify(scheme).replace(/"type"/g, '"bsonType"'));
     try {
-      this.connection.db.collection(collectionName).options['validator'] = validator;
+      this.db.collection(collectionName).options['validator'] = validator;
     } catch (e) {
       this.logger.error(e);
     }
   }
 
-  checkValidResourceCollection(resourceClassName: string) {
+  checkValidResourceCollection(resourceClassName: ResourceClassName) {
     if (!this.supportedResources.includes(resourceClassName)) {
       throw new ForbiddenException(`You can't operate on non resource collection "${resourceClassName}"`);
     }
@@ -193,22 +160,22 @@ export default class ResourceQueryService {
   private excludeSections = (excludedSectionNames: string[]) =>
     Object.fromEntries(excludedSectionNames.map((sectionName) => [sectionName, 0]));
 
-  async accessResource<Document>(
+  async accessResource<D>(
     grant: JwtPayload,
-    resourceClassName: string,
-    resourceId: string | ObjectId,
+    resourceClassName: ResourceClassName,
+    resourceId: ObjectId,
     // excludedSectionNames: string[],
-    options?: FindOptions<Document>,
-  ): Promise<WithId<Document>> {
+    options?: FindOptions<D>,
+  ) {
     // we assume that portfolio access is checked before this method is called
     // if (!this.authService.hasAnyRole(grant, allowedRoles)) {
     //   this.logger.warn('You dont have role allowing to access this resource');
     //   throw new ForbiddenException();
     // }
 
-    const resource = await this._findOne<Document>(
+    const resource = await this._findOne<D>(
       resourceClassName,
-      { _id: resourceId instanceof ObjectId ? resourceId : new ObjectId(resourceId) },
+      { _id: resourceId } as unknown as Filter<D>,
       options,
       // ? options
       // : {
@@ -239,8 +206,8 @@ export default class ResourceQueryService {
   }
 
   async paginate<T extends Timestamped, K extends keyof T>(
-    collectionName: string,
-    query: FilterQuery<any>,
+    collectionName: ResourceClassName,
+    query: Filter<any>,
     cursorOpts: Cursor<T, K>,
     projection?: Array<keyof T>,
   ) {
