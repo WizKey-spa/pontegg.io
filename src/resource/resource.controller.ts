@@ -16,8 +16,18 @@ import {
   UseInterceptors,
   Res,
   UploadedFiles,
+  Sse,
 } from '@nestjs/common';
-import { ApiResponse, ApiOperation, ApiQuery, ApiBearerAuth, ApiConsumes, ApiBody, ApiTags } from '@nestjs/swagger';
+import {
+  ApiResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+  ApiTags,
+  ApiParam,
+} from '@nestjs/swagger';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 
 import ResourceBaseService from './resource.service';
@@ -32,6 +42,7 @@ import { Actor, JwtPayload } from '@Types/auth';
 import { FileUpload } from '@Types/document';
 import API, { Let, Section } from '@Types/api';
 import { ResourceClassName } from '@Types/common';
+import { Observable } from 'rxjs';
 
 type ResponseWithHeader = Response & { header: any; status: any };
 
@@ -389,6 +400,13 @@ ${JSON.stringify(apiDef.scheme.properties[sectionName], null, 2)}
       @Param('sectionName') sectionName: string,
     ) {
       return this.resourceService.deleteSection(grant, Id, sectionName);
+    }
+
+    @Sse(':Id/sse')
+    @ApiOperation({ summary: 'Pushes notifications for latest negotiation events (price offer and updated document)' })
+    @ApiParam({ name: 'Id', type: 'string', required: true })
+    async getNotifications<D>(@Param('Id', objId) Id: ObjectId, @Jwt() grant: JwtPayload): Promise<Observable<D>> {
+      return this.resourceService.subscribe(grant, Id);
     }
   }
 

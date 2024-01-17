@@ -642,8 +642,14 @@ export default class ResourceBaseService {
     this.emitter.emit(negotiationId, { data: msg });
   }
 
-  subscribe<D>(resourceId: string): Observable<D> {
-    return fromEvent<D>(this.emitter, resourceId);
+  async subscribe<D>(grant: JwtPayload, resourceId: ObjectId): Promise<Observable<D>> {
+    // we use same permissions as for get
+    const allow = this.apiDef.get.let;
+    const resource = await this.accessResource<D>(grant, resourceId);
+    const actualUserRoles = this.getActualUserRoles(this.getUserGroups(grant), allow);
+    await grantGetResourceAccess(this.resourceClassName, actualUserRoles, resource);
+
+    return fromEvent<D>(this.emitter, resourceId.toString());
   }
 }
 
