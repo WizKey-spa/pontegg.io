@@ -258,9 +258,9 @@ There can be multiple 'if' conditions which correspond to 'OR' boolean operation
 
 `Pontegg.io` tries to address most common use cases, when it comes short on functionality it is possible to extend it further with custom logic.
 
-- Each POST, PUT, DELETE operation emits Event (`ResourceCreatedEvent`, `ResourceDeletedEvent`, `ResourceUpdatedEvent`) which can be handled by custom listeners and further work on it. It can be used to send notifications, log events to audit log, etc.
+- Each POST, PUT, DELETE operation emits Event (`ResourceCreatedEvent`, `ResourceDeletedEvent`, `ResourceUpdatedEvent`) which can be handled by custom listeners and further work on it. It can be used to send notifications, log events to audit log, etc. Events are emitted **after** resource is created, updated or deleted.
 
-- If endpoint needs some custom logic which result must be returned to the client, then it can be done by adding custom endpoint to the controller. (usual nest way)
+- If endpoint needs some custom logic which result must be returned to the client, then it can be done by adding custom endpoint to the controller (usual nest way). In this scenario you can still benefit using present methods to validate incoming data, sanitize, validate user access, etc.
 
 ## TODO
 
