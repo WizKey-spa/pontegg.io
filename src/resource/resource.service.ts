@@ -11,12 +11,12 @@ import { EventBus } from '@nestjs/cqrs';
 import { ConfigService } from '@nestjs/config';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
-import { Db, ObjectId, FindOptions, Document, Filter } from 'mongodb';
+import { Db, ObjectId, FindOptions, Document, Filter, WithId } from 'mongodb';
 import { createHash } from 'crypto';
 import * as _ from 'lodash';
 import Ajv from 'ajv';
 
-import { Readable } from 'stream';
+import { EventEmitter, Readable } from 'stream';
 
 import ResourceQueryService from './resource.query.service';
 import { StorageService } from '../storage/storage.service';
@@ -34,6 +34,7 @@ import { Let, Allowed, ApiOperation, Condition } from '@Types/api';
 import { ValidatorService } from '../validator/validator.service';
 import { CurrentUserData, CurrentUserRoles, grantGetResourceAccess, verifyAccess } from './resource.accces';
 import { ResourceClassName } from '@Types/common';
+import { Observable, fromEvent } from 'rxjs';
 
 export enum ValidateOperation {
   CREATE = 'create',
@@ -46,6 +47,7 @@ const baseResourceProjection = ['_id', 'state', 'createdAt', 'updatedAt'];
 export default class ResourceBaseService {
   public collection: Db['collection'];
   private validator: Ajv;
+  private readonly emitter: EventEmitter;
 
   constructor(
     @Inject('RESOURCE_NAME') readonly resourceClassName: ResourceClassName,
@@ -62,6 +64,7 @@ export default class ResourceBaseService {
       this.resourceQueryService._createIndexes(this.resourceClassName, apiDef.indexes);
     }
     this.validator = validatorService.getValidator(this.resourceClassName);
+    this.emitter = new EventEmitter();
   }
 
   getUserGroups<Actor extends string | number | symbol>(grant: JwtPayload): CurrentUserData<Actor> {
@@ -203,6 +206,7 @@ export default class ResourceBaseService {
 
     const user = this.getUser(grant);
     this.eventBus.publish(new ResourceCreatedEvent(this.resourceClassName, data, resource.id, user));
+    this.notify(data);
     return resource;
   }
 
@@ -626,6 +630,20 @@ export default class ResourceBaseService {
       section.forEach(async (storedDocument) => await this.storage.deleteFile(storedDocument));
     }
     return await this.doUpsertSection(grant, 'update', sectionName, resource, null);
+  }
+
+  async notify<D>(msg: WithId<D>) {
+    const negotiationId = msg._id.toString();
+    //  we don't want to send file
+    if ((msg as any).file) {
+      delete (msg as any).file;
+    }
+    // this.logger.debug(`notify ${negotiationId}`);
+    this.emitter.emit(negotiationId, { data: msg });
+  }
+
+  subscribe<D>(resourceId: string): Observable<D> {
+    return fromEvent<D>(this.emitter, resourceId);
   }
 }
 
