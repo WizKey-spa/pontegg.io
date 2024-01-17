@@ -30,6 +30,7 @@ see further installation steps in [docs/instalation.md](docs/instalation.md)
 - [x] automatic data sorting
 - [x] event sourcing (Events)
 - [x] resource section versioning
+- [x] test automation
 
 ## Why?
 
@@ -66,13 +67,9 @@ Every state change emits 'event' ([event sourcing](https://martinfowler.com/eaaD
 
 2. _Auth_ - Responsible for authentication. Provides JWT token validation.
 
-3. _Emails_ - Allows sending emails: simple, html, with attachments etc.
+3. _i18n_ - Localization
 
-4. _i18n_ - Localization
-
-5. _PdfRender_ - renders pdf from markdown formatted text
-
-6. _Validator_ - Ajv based json scheme validator
+4. _Validator_ - Ajv based json scheme validator
 
 ## Usage
 
@@ -254,6 +251,72 @@ On `update` action 'if' conditions refer to the present resource properties. For
 
 There can be multiple 'if' conditions which correspond to 'OR' boolean operation. Which means that if at least one condition is met then the action is allowed.
 
+## Test automation
+
+`pontegg.io` provides test automation testing all CRUD operations and sections. For example:
+
+```typescript
+import { HttpRequests, Payloads, Uploads, testResourceE2E } from './testHelpers';
+import { groups } from '@wizkey/ecogenius-shared/src/types/auth';
+import apiDef from '../src/projects/projects.api';
+import { httpMock, httpMockCrud } from './mocks/notifications';
+
+import { Actor } from '@Types/auth';
+import { Project as Resource } from '@Types/projects';
+import { info } from './mocks/project';
+
+const filePdf = resolve('./test/files/test.pdf');
+const fileJpg = resolve('./test/files/test.jpg');
+
+const uploads: Uploads<Actor, Resource, API<Actor, Resource>> = {
+  image: {
+    succeeds: [
+      ['jpeg', fileJpg],
+      ['png', filePng],
+    ],
+    fails: [
+      ['big pdf file (>5 MB)', bigFile12MbPdf],
+      ['jpeg', fileJpg],
+    ],
+  },
+};
+
+const payloads: Payloads<Actor, Resource, API<Actor, Resource>> = {
+  info: {
+    succeeds: [['expected payload', info]],
+    fails: [
+      ['wrong payload', { isApproved: 'ssd' }],
+      ['additional data', { ...info, additional: 'data' }],
+      ['wrong data', { ...info, budget: -100000 }],
+    ],
+  },
+};
+
+const resourceName = 'projects';
+// basic resource data
+const residualData = { projects: [projectData], principals: [principalData] };
+
+// mocks for all http requests
+const httpMockAll: HttpRequests<any> = {
+  ...httpMockCrud,
+  approved: httpMock,
+};
+
+const httpRequests: HttpRequests<Resource> = httpMockAll;
+
+describe(`Projects Controller`, () => {
+  testResourceE2E<Actor, Resource>({
+    resourceName,
+    groups,
+    apiDef,
+    uploads,
+    payloads,
+    residualData,
+    httpRequests,
+  });
+});
+```
+
 ## Extending pontegg.io
 
 `Pontegg.io` tries to address most common use cases, when it comes short on functionality it is possible to extend it further with custom logic.
@@ -272,3 +335,7 @@ There can be multiple 'if' conditions which correspond to 'OR' boolean operation
 - [ ] add support for rejecting uploads with not whitelisted file extensions
 
 ## License
+
+```
+
+```
