@@ -1,4 +1,7 @@
+import { ObjectId } from 'mongodb';
+
 interface Resource {
+  _id: ObjectId;
   state: string[];
   createdAt: string;
   updatedAt: string;

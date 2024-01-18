@@ -1,3 +1,5 @@
+import { User } from './auth';
+
 type Index = { key: { [value: string]: 1 | -1 }; unique?: boolean };
 
 // export type If = Record<string, string | string[] | boolean> | boolean;
@@ -101,4 +103,12 @@ export default interface API<Actor extends string, Resource> {
   delete?: Delete<Actor, Resource>;
   list: List<Actor, Resource>;
   coerceFields?: Record<string, string[]>;
+}
+
+export interface SseMsg<Resource> {
+  timestamp: string;
+  actor: User;
+  operation: ApiOperation;
+  diff: Partial<Resource>;
+  sectionName?: string;
 }

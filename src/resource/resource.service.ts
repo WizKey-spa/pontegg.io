@@ -11,7 +11,7 @@ import { EventBus } from '@nestjs/cqrs';
 import { ConfigService } from '@nestjs/config';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
-import { Db, ObjectId, FindOptions, Document, Filter, WithId } from 'mongodb';
+import { Db, ObjectId, FindOptions, Document, Filter } from 'mongodb';
 import { createHash } from 'crypto';
 import * as _ from 'lodash';
 import Ajv from 'ajv';
@@ -29,12 +29,13 @@ import { Cursor } from './resource.dto';
 
 import { Actor, JwtPayload, User } from '@Types/auth';
 import { FileUpload, StoredFile } from '@Types/document';
-import { Let, Allowed, ApiOperation, Condition } from '@Types/api';
+import { Let, Allowed, ApiOperation, Condition, SseMsg } from '@Types/api';
 // import { Cursor } from 'src/common.dto';
 import { ValidatorService } from '../validator/validator.service';
 import { CurrentUserData, CurrentUserRoles, grantGetResourceAccess, verifyAccess } from './resource.accces';
 import { ResourceClassName } from '@Types/common';
 import { Observable, fromEvent } from 'rxjs';
+import Resource from '@Types/resource';
 
 export enum ValidateOperation {
   CREATE = 'create',
@@ -206,7 +207,7 @@ export default class ResourceBaseService {
 
     const user = this.getUser(grant);
     this.eventBus.publish(new ResourceCreatedEvent(this.resourceClassName, data, resource.id, user));
-    this.notify(data);
+    this.notify(resource.id.toString(), 'create', user, data);
     return resource;
   }
 
@@ -256,7 +257,7 @@ export default class ResourceBaseService {
     this.eventBus.publish(
       new ResourceUpdatedEvent(this.resourceClassName, 'update', data, updatedResource, grant, user),
     );
-
+    this.notify(resourceId.toString(), 'update', user, preparedData);
     return updatedResource;
   }
 
@@ -380,7 +381,7 @@ export default class ResourceBaseService {
 
     const user = this.getUser(grant);
     this.eventBus.publish(new ResourceDeletedEvent(this.resourceClassName, resourceId.toString(), user));
-
+    this.notify(resourceId.toString(), 'delete', user, {});
     return deletedResource;
   }
 
@@ -532,7 +533,7 @@ export default class ResourceBaseService {
     this.eventBus.publish(
       new ResourceUpdatedEvent(this.resourceClassName, operation, payload, resource, grant, user, sectionName),
     );
-
+    this.notify(resource.id.toString(), 'update', user, preparedData, sectionName);
     return updatedResource.value;
   }
 
@@ -632,14 +633,20 @@ export default class ResourceBaseService {
     return await this.doUpsertSection(grant, 'update', sectionName, resource, null);
   }
 
-  async notify<D>(msg: WithId<D>) {
-    const negotiationId = msg._id.toString();
+  async notify(
+    resourceId: string,
+    operation: ApiOperation,
+    actor: User,
+    diff: Partial<Resource>,
+    sectionName?: string,
+  ) {
     //  we don't want to send file
-    if ((msg as any).file) {
-      delete (msg as any).file;
+    if ((diff as any).file) {
+      delete (diff as any).file;
     }
-    // this.logger.debug(`notify ${negotiationId}`);
-    this.emitter.emit(negotiationId, { data: msg });
+    const timestamp = new Date().getTime().toString();
+    const data: SseMsg<Resource> = { timestamp, operation, diff, actor, sectionName };
+    this.emitter.emit(resourceId, { data });
   }
 
   async subscribe<D>(grant: JwtPayload, resourceId: ObjectId): Promise<Observable<D>> {
