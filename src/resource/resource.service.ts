@@ -12,6 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 import { Db, ObjectId, FindOptions, Document, Filter } from 'mongodb';
+import { Observable, fromEvent } from 'rxjs';
 import { createHash } from 'crypto';
 import * as _ from 'lodash';
 import Ajv from 'ajv';
@@ -21,6 +22,7 @@ import { EventEmitter, Readable } from 'stream';
 import ResourceQueryService from './resource.query.service';
 import { StorageService } from '../storage/storage.service';
 import { dates2str } from '../lib/dates2str';
+import { ValidatorService } from '../validator/validator.service';
 
 import { FileUploadedEvent } from './events/FileUploadedEvent';
 import { ResourceCreatedEvent, ResourceDeletedEvent, ResourceUpdatedEvent } from './events/resourceEvents';
@@ -31,10 +33,8 @@ import { Actor, JwtPayload, User } from '@Types/auth';
 import { FileUpload, StoredFile } from '@Types/document';
 import { Let, Allowed, ApiOperation, Condition, SseMsg } from '@Types/api';
 // import { Cursor } from 'src/common.dto';
-import { ValidatorService } from '../validator/validator.service';
 import { CurrentUserData, CurrentUserRoles, grantGetResourceAccess, verifyAccess } from './resource.accces';
 import { ResourceClassName } from '@Types/common';
-import { Observable, fromEvent } from 'rxjs';
 import Resource from '@Types/resource';
 
 export enum ValidateOperation {
