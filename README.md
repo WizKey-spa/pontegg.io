@@ -179,45 +179,45 @@ Every state change emits 'event' ([event sourcing](https://martinfowler.com/eaaD
    export type Actor = 'user' | 'admin';
 
    const api: API<Actor> = {
-    resourceSchemeName: 'user',
-    scheme,
-    states: scheme.properties.state.enum,
-    indexes: [{ key: { userId: 1 } }, { key: { createdAt: 1 } }, { key: { updatedAt: 1 } }],
-    sections: {
-      profile: {
-        create: {
-          let: ['admin', { for: 'user', if: { state: ['init'] } }],
-          set: { state: 'profileCreated' },
-        },
-      },
-      contacts: {
-        create: {
-          let: ['admin', { for: 'user', if: { state: ['init'] } }],
-          set: { state: 'contactsCreated' },
-        },
-      },
-    },
-    get: {
-      let: ['admin', { for: 'user', if: { user: '_id' } }],
-    },
-    create: {
-      let: [
-        { for: 'user', validate: 'create.user', set: 'authId' },
-        { for: 'admin', validate: 'admin.create.user' },
-      ],
-      set: { state: 'init' },
-    },
-    delete: {
-      let: ['admin'],
-    },
-    update: {
-      roles: ['admin'],
-    },
-    list: {
-      let: ['admin'],
-      query: ['userId', 'state'],
-      projection: ['userId', 'invoice', 'document'],
-    },
+     resourceSchemeName: 'user',
+     scheme,
+     states: scheme.properties.state.enum,
+     indexes: [{ key: { userId: 1 } }, { key: { createdAt: 1 } }, { key: { updatedAt: 1 } }],
+     sections: {
+       profile: {
+         create: {
+           let: ['admin', { for: 'user', if: { state: ['init'] } }],
+           set: { state: 'profileCreated' },
+         },
+       },
+       contacts: {
+         create: {
+           let: ['admin', { for: 'user', if: { state: ['init'] } }],
+           set: { state: 'contactsCreated' },
+         },
+       },
+     },
+     get: {
+       let: ['admin', { for: 'user', if: { user: '_id' } }],
+     },
+     create: {
+       let: [
+         { for: 'user', validate: 'create.user', set: 'authId' },
+         { for: 'admin', validate: 'admin.create.user' },
+       ],
+       set: { state: 'init' },
+     },
+     delete: {
+       let: ['admin'],
+     },
+     update: {
+       roles: ['admin'],
+     },
+     list: {
+       let: ['admin'],
+       query: ['userId', 'state'],
+       projection: ['userId', 'invoice', 'document'],
+     },
    };
    export default api;
    ```
@@ -258,7 +258,23 @@ There can be multiple 'if' conditions which correspond to 'OR' boolean operation
 
 ## Test automation
 
-`pontegg.io` provides test automation testing all CRUD operations and sections. For example:
+`pontegg.io` provides test automation testing all CRUD operations and sections.
+It test both success and failure scenarios. It tests all possible combinations of roles, states, payloads, uploads, etc.
+
+Roughly it test for:
+
+- success with sending correct payload
+- failure with sending incorrect payload
+- success with sending correct upload
+- failure with sending incorrect upload
+- success with allowed user group
+- failure with not allowed user groups
+- success with committing to allowed state
+- failure with committing to not allowed state
+
+Depending on the resource complexity of the resource and number of intervening actors there can be hundreds of test cases and so test may take a while to complete.
+
+For example:
 
 ```typescript
 import { HttpRequests, Payloads, Uploads, testResourceE2E } from './testHelpers';
