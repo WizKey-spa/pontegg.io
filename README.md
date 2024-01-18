@@ -31,6 +31,7 @@ see further installation steps in [docs/instalation.md](docs/instalation.md)
 - [x] event sourcing (Events)
 - [x] resource section versioning
 - [x] test automation
+- [x] SSE (Server Sent Events)
 
 ## Why?
 
@@ -178,45 +179,45 @@ Every state change emits 'event' ([event sourcing](https://martinfowler.com/eaaD
    export type Actor = 'user' | 'admin';
 
    const api: API<Actor> = {
-     resourceSchemeName: 'user',
-     scheme,
-     states: scheme.properties.state.enum,
-     indexes: [{ key: { userId: 1 } }, { key: { createdAt: 1 } }, { key: { updatedAt: 1 } }],
-     sections: {
-       profile: {
-         create: {
-           let: ['admin', { for: 'user', if: { state: ['init'] } }],
-           set: { state: 'profileCreated' },
-         },
-       },
-       contacts: {
-         create: {
-           let: ['admin', { for: 'user', if: { state: ['init'] } }],
-           set: { state: 'contactsCreated' },
-         },
-       },
-     },
-     get: {
-       let: ['admin', { for: 'user', if: { user: '_id' } }],
-     },
-     create: {
-       let: [
-         { for: 'user', validate: 'create.user', set: 'authId' },
-         { for: 'admin', validate: 'admin.create.user' },
-       ],
-       set: { state: 'init' },
-     },
-     delete: {
-       let: ['admin'],
-     },
-     update: {
-       roles: ['admin'],
-     },
-     list: {
-       let: ['admin'],
-       query: ['userId', 'state'],
-       projection: ['userId', 'invoice', 'document'],
-     },
+    resourceSchemeName: 'user',
+    scheme,
+    states: scheme.properties.state.enum,
+    indexes: [{ key: { userId: 1 } }, { key: { createdAt: 1 } }, { key: { updatedAt: 1 } }],
+    sections: {
+      profile: {
+        create: {
+          let: ['admin', { for: 'user', if: { state: ['init'] } }],
+          set: { state: 'profileCreated' },
+        },
+      },
+      contacts: {
+        create: {
+          let: ['admin', { for: 'user', if: { state: ['init'] } }],
+          set: { state: 'contactsCreated' },
+        },
+      },
+    },
+    get: {
+      let: ['admin', { for: 'user', if: { user: '_id' } }],
+    },
+    create: {
+      let: [
+        { for: 'user', validate: 'create.user', set: 'authId' },
+        { for: 'admin', validate: 'admin.create.user' },
+      ],
+      set: { state: 'init' },
+    },
+    delete: {
+      let: ['admin'],
+    },
+    update: {
+      roles: ['admin'],
+    },
+    list: {
+      let: ['admin'],
+      query: ['userId', 'state'],
+      projection: ['userId', 'invoice', 'document'],
+    },
    };
    export default api;
    ```
@@ -251,6 +252,10 @@ On `update` action 'if' conditions refer to the present resource properties. For
 
 There can be multiple 'if' conditions which correspond to 'OR' boolean operation. Which means that if at least one condition is met then the action is allowed.
 
+## Authentication
+
+`pontegg.io` uses JWT token for authentication. It was tested with [Keycloak](https://www.keycloak.org/). It follows [RBAC](https://en.wikipedia.org/wiki/Role-based_access_control). It means that user can have multiple roles and each role can have multiple permissions. Roles are directly by groups. User may belong to multiple groups.
+
 ## Test automation
 
 `pontegg.io` provides test automation testing all CRUD operations and sections. For example:
@@ -263,8 +268,11 @@ import { httpMock, httpMockCrud } from './mocks/notifications';
 
 import { Actor } from '@Types/auth';
 import { Project as Resource } from '@Types/projects';
+
+// fixtures
 import { info } from './mocks/project';
 
+// test files
 const filePdf = resolve('./test/files/test.pdf');
 const fileJpg = resolve('./test/files/test.jpg');
 
@@ -327,7 +335,6 @@ describe(`Projects Controller`, () => {
 
 ## TODO
 
-- [ ] add support SSE
 - [ ] automatic data pagination
 - [ ] add support for (GraphQL)[https://graphql.org/]
 - [ ] add support MongoDB Schemas
@@ -336,6 +343,4 @@ describe(`Projects Controller`, () => {
 
 ## License
 
-```
-
-```
+[MIT](LICENSE)
