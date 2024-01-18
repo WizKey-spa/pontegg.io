@@ -27,7 +27,6 @@ see further installation steps in [docs/instalation.md](docs/instalation.md)
 - [x] out of the box file/s upload api
 - [x] automatic data validation [json schema](https://json-schema.org/)
 - [x] automatic data sanitization & coercion
-- [x] automatic data sorting
 - [x] event sourcing (Events)
 - [x] resource section versioning
 - [x] test automation
