@@ -2,7 +2,7 @@
 
 _"Give us the tools and we finish the job"_ - Winston Churchill
 
-`pontegg.io` is opinionated [nest.js](https://nestjs.com) scaffolding aiming to reduce boilerplate, increase security. It aims to shorten all typical repetitive development tasks allowing to lunch new APIs fast and focus on particular software business logic. It does not makes your coffee yet.
+`pontegg.io` is opinionated [nest.js](https://nestjs.com) framework aiming to reduce boilerplate, increase security. It aims to shorten all typical repetitive development tasks allowing to lunch new APIs fast and focus on particular software business logic. It does not makes your coffee yet.
 
 Attention!. It uses mongodb in 'schemaless' manner. Everything depends of robustness of your json schemes.
 
